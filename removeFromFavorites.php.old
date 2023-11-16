@@ -1,0 +1,39 @@
+<?php
+include './db.php';
+
+if (isset($_GET['itemId'])) {
+    $itemId = $_GET['itemId'];
+
+
+    // get the favorites
+    $sql = "SELECT favorites FROM users WHERE username='$loguser'";
+    $result = $conn->query($sql);
+    $favorites = unserialize($result->fetch_assoc()['favorites']);
+
+    $key = array_search($itemId, $favorites);
+
+    if ($key === false) {
+        echo json_encode(['status' => 'error', 'message' => "$itemId not in favorites", 'items' => $favorites]);
+        return;
+    }
+
+    // remove item from favorites
+    unset($favorites[$key]);
+    $favorites = array_values($favorites);
+    $serialized = serialize($favorites);
+
+    $sql = "UPDATE users 
+            SET favorites='$serialized' WHERE username='$loguser'";
+
+    $result = $conn->query($sql);
+
+    if ($result) {
+        echo json_encode(['status' => 'success', 'message' => "$itemId removed from favorites successfully", 'items' => $favorites]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => "Error removing $itemId from favorites", 'items' => $favorites]);
+    }
+}
+
+$conn->close();
+
+?>

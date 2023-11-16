@@ -1,0 +1,34 @@
+<?php
+include('./db.php');
+
+if (isset($_GET['itemId'])) {
+    $itemId = $_GET['itemId'];
+
+    // get the favorites
+    $sql = "SELECT favorites FROM users WHERE username='$loguser'";
+    $result = $conn->query($sql);
+    $favorites = unserialize($result->fetch_assoc()['favorites']);
+
+    if (in_array($itemId, $favorites)) {
+        echo json_encode(['status' => 'error', 'message' => "Item already in favorites", 'items' => $favorites]);
+        return;
+    }
+
+    // add item to favorites
+    array_push($favorites, $itemId);
+    $serialized = serialize($favorites);
+
+    $sql = "UPDATE users 
+            SET favorites='$serialized' WHERE username='$loguser'";
+    $result = $conn->query($sql);
+
+    if ($result) {
+        echo json_encode(['status' => 'success', 'message' => "$itemId added to favorites successfully", 'items' => $favorites]);
+    } else {
+        echo json_encode(['status' => 'error', 'message' => "Error adding $itemId to favorites", 'items' => $favorites]);
+    }
+}
+
+$conn->close();
+
+?>

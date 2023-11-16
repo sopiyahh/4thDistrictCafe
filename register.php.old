@@ -1,0 +1,53 @@
+<?php
+include('./db.php');
+
+if (isset($_GET['username']) && 
+    isset($_GET['password']) && 
+    isset($_GET['fullname']) && 
+    isset($_GET['address']) && 
+    isset($_GET['phone']) && 
+    isset($_GET['email'])) {
+    $username = $_GET['username'];
+    $password = $_GET['password'];
+    $fullname = $_GET['fullname'];
+    $address = $_GET['address'];
+    $phone = $_GET['phone'];
+    $email = $_GET['email'];
+
+    if (isset($_GET['autologin']))
+        $autologin = $_GET['autologin'] === 'true';
+    else
+        $autologin = false;
+
+    // Check if the username already exists
+    $sql_check = "SELECT * FROM users WHERE username='$username'";
+    $result = $conn->query($sql_check);
+
+    if ($result->num_rows == 1) {
+        echo json_encode(['status' => 'error', 'message' => 'Username already exists', 'username' => $username]);
+    } else {
+        $favorites = serialize([]);
+        $cart = serialize([]);
+
+        if ($conn->query( "CREATE TABLE IF NOT EXISTS 
+                {$username}_history (
+                    buy_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    address VARCHAR(100),
+                    items MEDIUMBLOB,
+                    total float,
+                    received boolean
+                )") === TRUE && $conn->query(
+            "INSERT INTO users (username, password, fullname, address, phone, email, favorites, cart) 
+             VALUES ('$username', '$password', '$fullname', '$address', '$phone', '$email', '$favorites', '$cart')") === TRUE) {
+            
+            if ($autologin)
+                $_SESSION['username'] = $username;
+            echo json_encode(['status' => 'success', 'message' => 'Registration successful', 'username' => $username]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => 'Error: ' . $conn->error, 'username' => $username]);
+        }
+    }
+}
+
+$conn->close();
+?>
